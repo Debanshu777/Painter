@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation_graph"
+    app:startDestination="@id/paintFragment">
+
+    <fragment
+        android:id="@+id/paintFragment"
+        android:name="com.debanshu777.painter.ui.fragment.PaintFragment"
+        android:label="fragment_paint"
+        tools:layout="@layout/fragment_paint" >
+        <action
+            android:id="@+id/action_paintFragment_to_savedImageFragment"
+            app:destination="@id/savedImageFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/savedImageFragment"
+        android:name="com.debanshu777.painter.ui.fragment.SavedImageFragment"
+        android:label="fragment_saved_image"
+        tools:layout="@layout/fragment_saved_image" />
+</navigation>
