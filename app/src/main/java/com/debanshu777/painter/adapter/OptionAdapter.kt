@@ -30,6 +30,11 @@ class OptionAdapter(private val list: ArrayList<Option>) : RecyclerView.Adapter<
         val currentItem = list[position]
         holder.textView.text = currentItem.optionName
         holder.imageView.setImageResource(currentItem.icon)
+        holder.imageView.apply {
+            setOnClickListener {
+                onItemClickListener?.let { it(currentItem) }
+            }
+        }
         holder.itemView.apply {
             holder.textView.setTypeface(holder.textView.typeface,Typeface.BOLD)
             setOnClickListener {

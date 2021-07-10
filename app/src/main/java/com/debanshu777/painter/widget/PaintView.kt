@@ -3,6 +3,7 @@ package com.debanshu777.painter.widget
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import kotlin.math.abs
@@ -13,7 +14,7 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
     private var mPaint:Paint=Paint()
     private var mPath:Path=Path()
     private var colorBackground:Int
-    private var sizeBrush:Int=10
+    private var sizeBrush:Int=5
     private var sizeEraser:Int
     private var mX:Float = 0.0f
     private var mY:Float = 0.0f
@@ -53,9 +54,10 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
         canvas.drawBitmap(btnBackground,0f,0f,null)
         canvas.drawBitmap(btnView,0f,0f,null)
     }
-    fun setColorBackground(color:Int):Unit{
+    fun setColorBackground(color:Int){
         colorBackground=color
         invalidate()
+        Log.e("SetBackgroundColor ",color.toString())
     }
 
     fun setSizeBrush(size:Int){
@@ -64,11 +66,14 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
     }
     fun setBrushColor(color:Int){
         mPaint.color = color
+        invalidate()
+        Log.e("SetBrushColor ",color.toString())
     }
 
-    fun setEraser(size:Int){
+    fun setEraserSize(size:Int){
         sizeEraser=size
-        mPaint.strokeWidth=toPx(sizeBrush)
+        Log.e("SizeEraser ", sizeEraser.toString())
+        mPaint.strokeWidth=toPx(sizeEraser)
     }
 
     fun enableEraser(){
@@ -104,12 +109,12 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
         when(event.action){
             MotionEvent.ACTION_DOWN->{
                 touchStart(x,y)
-
             }
             MotionEvent.ACTION_MOVE->{
                 touchMove(x,y)
             }
             MotionEvent.ACTION_UP->{
+                addLastAction(getBitMap())
                 touchUp()
             }
         }

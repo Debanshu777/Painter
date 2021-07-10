@@ -11,6 +11,7 @@
         android:layout_margin="5dp"
         android:padding="7dp"
         android:src="@drawable/ic_brush"
+        app:layout_constraintVertical_bias="0.1"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -37,6 +38,7 @@
         <SeekBar
             android:layout_marginTop="10dp"
             android:padding="10dp"
+            android:max="99"
             android:id="@+id/seekbar_size"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
