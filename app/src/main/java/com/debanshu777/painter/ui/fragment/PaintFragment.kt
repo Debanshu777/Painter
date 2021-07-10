@@ -1,14 +1,21 @@
 package com.debanshu777.painter.ui.fragment
 
 import android.app.AlertDialog
-import android.content.DialogInterface
+import android.content.ContentResolver
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.SeekBar
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,15 +26,24 @@ import com.debanshu777.painter.utils.Constant.Companion.BACKGROUND
 import com.debanshu777.painter.utils.Constant.Companion.BRUSH
 import com.debanshu777.painter.utils.Constant.Companion.ERASER
 import com.debanshu777.painter.utils.Constant.Companion.PALETTE
+import com.debanshu777.painter.utils.Constant.Companion.PERMISSION_STORAGE_REQUEST_CODE
 import com.debanshu777.painter.utils.Constant.Companion.UNDO
 import com.flask.colorpicker.ColorPickerView
-import com.flask.colorpicker.builder.ColorPickerClickListener
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
+import com.google.android.material.snackbar.Snackbar
+import com.vmadalin.easypermissions.EasyPermissions
+import com.vmadalin.easypermissions.dialogs.SettingsDialog
 import kotlinx.android.synthetic.main.fragment_paint.*
 import kotlinx.android.synthetic.main.item_option.*
 import kotlinx.android.synthetic.main.layout_dialog.view.*
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.OutputStream
+import java.util.*
+import kotlin.collections.ArrayList
 
-class PaintFragment : Fragment(R.layout.fragment_paint) {
+class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.PermissionCallbacks {
     private lateinit var optionAdapter: OptionAdapter
     private lateinit var list: ArrayList<Option>
     private var colorBackground: Int = 0
@@ -63,7 +79,94 @@ class PaintFragment : Fragment(R.layout.fragment_paint) {
 
             }
         }
+        save_btn.setOnClickListener{
+            saveImages()
+        }
 
+    }
+
+    private fun hasExternalStoragePermission():Boolean = EasyPermissions.hasPermissions(
+            requireContext(),
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+
+    private fun requestExternalStoragePermission(){
+        EasyPermissions.requestPermissions(
+            requireActivity(),
+            "This Application cannot work without Storage Permission",
+            PERMISSION_STORAGE_REQUEST_CODE,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+        saveImages()
+    }
+
+    private fun saveImages() {
+        if(!hasExternalStoragePermission()){
+            requestExternalStoragePermission()
+        }else{
+            val bitmap:Bitmap = paint_base_layout.getBitMap()
+            val filename="${UUID.randomUUID()}.png"
+            var outputStream:OutputStream?
+            var isSaved:Boolean
+
+            Log.e("Saved Image Name",filename)
+            Log.e(" Saved Image Path",activity?.getExternalFilesDir(Environment.DIRECTORY_PICTURES).toString()+File.separator+getString(R.string.app_name))
+
+            val folder:File = if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.Q){
+                File(
+                    requireActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                        .toString() + File.separator + getString(R.string.app_name)
+                )
+            }else {
+                File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                        .toString() + File.separator + getString(R.string.app_name)
+                )
+            }
+            if(!folder.exists()){
+                folder.mkdirs()
+            }
+            try {
+                val toBeSavedFile = File(folder.toString()+File.separator+filename)
+                val imageUri = Uri.fromFile(toBeSavedFile)
+
+                Log.e("File Stream Name",folder.toString()+File.separator+filename)
+                outputStream = FileOutputStream(toBeSavedFile)
+                isSaved=bitmap.compress(Bitmap.CompressFormat.PNG,100,outputStream)
+
+                if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.Q){
+                    val resolver:ContentResolver = requireContext().contentResolver
+                    val contentValue=ContentValues()
+                    contentValue.put(MediaStore.MediaColumns.DISPLAY_NAME,filename)
+                    contentValue.put(MediaStore.MediaColumns.MIME_TYPE,"image/png")
+                    contentValue.put(MediaStore.MediaColumns.RELATIVE_PATH,Environment.DIRECTORY_PICTURES+File.separator+getString(R.string.app_name))
+                    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,contentValue)
+                    outputStream = resolver.openOutputStream(uri!!)
+                    isSaved=bitmap.compress(Bitmap.CompressFormat.PNG,100,outputStream)
+
+                }else{
+                    sendPictureToGallery(imageUri)
+                }
+                if(isSaved) {
+                    Snackbar.make(paint_base_layout, "Image Saved", Snackbar.LENGTH_LONG).show()
+
+                }else{
+                    Snackbar.make(paint_base_layout,"Something Went Wrong",Snackbar.LENGTH_LONG).show()
+                }
+
+                outputStream?.flush()
+                outputStream?.close()
+            }catch (e:FileNotFoundException){
+                e.printStackTrace()
+            }
+
+        }
+    }
+
+    private fun sendPictureToGallery(imageUri:Uri) {
+        val i:Intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+        i.data = imageUri
+        requireActivity().sendBroadcast(i)
     }
 
     private fun updateColor(optionName: String) {
@@ -191,5 +294,24 @@ class PaintFragment : Fragment(R.layout.fragment_paint) {
         }
     }
 
+    override fun onPermissionsDenied(requestCode: Int, perms: List<String>) {
+       if(EasyPermissions.somePermissionPermanentlyDenied(requireActivity(),perms)){
+           SettingsDialog.Builder(requireActivity()).build().show()
+       }else{
+           requestExternalStoragePermission()
+       }
+    }
 
+    override fun onPermissionsGranted(requestCode: Int, perms: List<String>) {
+        Snackbar.make(paint_base_layout,"Permission Granted",Snackbar.LENGTH_LONG).show()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        EasyPermissions.onRequestPermissionsResult(requestCode,permissions,grantResults,requireContext())
+    }
 }
