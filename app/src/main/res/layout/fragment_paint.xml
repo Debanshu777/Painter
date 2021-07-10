@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.fragment.PaintFragment">
 
-    <LinearLayout
+    <com.debanshu777.painter.widget.PaintView
         android:id="@+id/paint_base_layout"
         android:layout_width="0dp"
         android:layout_height="0dp"
