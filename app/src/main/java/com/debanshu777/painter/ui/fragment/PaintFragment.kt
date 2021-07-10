@@ -34,7 +34,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.vmadalin.easypermissions.EasyPermissions
 import com.vmadalin.easypermissions.dialogs.SettingsDialog
 import kotlinx.android.synthetic.main.fragment_paint.*
-import kotlinx.android.synthetic.main.item_option.*
 import kotlinx.android.synthetic.main.layout_dialog.view.*
 import java.io.File
 import java.io.FileNotFoundException
