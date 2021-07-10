@@ -5,21 +5,20 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import java.util.jar.Attributes
 import kotlin.math.abs
 
 class PaintView(context: Context,attributes: AttributeSet) : View(context,attributes) {
     private lateinit var btnBackground: Bitmap
     private lateinit var btnView:Bitmap
-    private lateinit var mPaint:Paint
-    lateinit var mPath:Path
-    private var colorBackground:Int = 0
-    private var sizeBrush:Int=0
-    var sizeEraser:Int=0
-    var mX:Float=0f
-    var mY:Float=0f
-    lateinit var mCanvas: Canvas
-    val DIFFERENCE_SPACE:Int=4
+    private var mPaint:Paint=Paint()
+    private var mPath:Path=Path()
+    private var colorBackground:Int
+    private var sizeBrush:Int=10
+    private var sizeEraser:Int
+    private var mX:Float = 0.0f
+    private var mY:Float = 0.0f
+    private lateinit var mCanvas: Canvas
+    private val DIFFERENCE_SPACE:Int=4
     private var listAction:ArrayList<Bitmap>
     init {
         sizeEraser=sizeBrush-12
@@ -99,12 +98,13 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
         }
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        val x: Float? = event?.x
-        val y: Float? = event?.y
-        when(event?.action){
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        val x: Float = event.x
+        val y: Float = event.y
+        when(event.action){
             MotionEvent.ACTION_DOWN->{
                 touchStart(x,y)
+
             }
             MotionEvent.ACTION_MOVE->{
                 touchMove(x,y)
@@ -119,13 +119,14 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
 
     private fun touchUp() {
         mPath.reset()
+        invalidate()
     }
 
     private fun touchMove(x: Float?, y: Float?) {
         val dx:Float= abs(x!!-mX)
         val dy:Float= abs(y!!-mY)
         if(dx>=DIFFERENCE_SPACE || dy>=DIFFERENCE_SPACE){
-           mPath.quadTo(x,y,(x-mX)/2,(y-mY)/2)
+           mPath.quadTo(mX,mY,(x+mX)/2,(y+mY)/2)
            mY=y
            mX=x
            mCanvas.drawPath(mPath,mPaint)
@@ -134,9 +135,11 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
     }
 
     private fun touchStart(x: Float?, y: Float?) {
+        mPath.reset();
         mPath.moveTo(x!!,y!!)
         mX= x
         mY=y
+        invalidate()
     }
 
     fun getBitMap():Bitmap{
