@@ -11,21 +11,27 @@ import kotlin.math.abs
 class PaintView(context: Context,attributes: AttributeSet) : View(context,attributes) {
     private lateinit var btnBackground: Bitmap
     private lateinit var btnView:Bitmap
+    private var image:Bitmap?
     private var mPaint:Paint=Paint()
     private var mPath:Path=Path()
     private var colorBackground:Int
     private var sizeBrush:Int=5
     private var sizeEraser:Int
+    private var leftPosition:Float = 50f
+    private var topPosition:Float = 50f
     private var mX:Float = 0.0f
     private var mY:Float = 0.0f
     private lateinit var mCanvas: Canvas
     private val DIFFERENCE_SPACE:Int=4
     private var listAction:ArrayList<Bitmap>
+
+
     init {
         sizeEraser=sizeBrush-12
         colorBackground=Color.WHITE
         listAction= ArrayList()
 
+        image = null
         mPaint.color = Color.BLACK
         mPaint.isAntiAlias=true
         mPaint.isDither=true
@@ -51,6 +57,9 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawColor(colorBackground)
+        if(image!=null){
+            canvas.drawBitmap(image!!,leftPosition,topPosition,null)
+        }
         canvas.drawBitmap(btnBackground,0f,0f,null)
         canvas.drawBitmap(btnView,0f,0f,null)
     }
@@ -153,5 +162,10 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
         val bitmap: Bitmap= Bitmap.createBitmap(this.getDrawingCache())
         this.isDrawingCacheEnabled=false
         return bitmap
+    }
+
+    fun setImage(bitmap: Bitmap) {
+        image=Bitmap.createScaledBitmap(bitmap,width/2,height/2,true)
+        invalidate()
     }
 }

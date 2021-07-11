@@ -8,5 +8,7 @@ class Constant {
         const val PALETTE="Palette"
         const val BACKGROUND="Background"
         const val UNDO="Undo"
+        const val IMAGE="Image"
+        const val PICK_IMAGE=1000
     }
 }

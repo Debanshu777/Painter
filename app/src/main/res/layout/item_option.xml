@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<LinearLayout xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/mainLayout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="100dp"
@@ -13,7 +13,8 @@
         android:background="?android:attr/windowBackground"
         android:src="@drawable/ic_brush"
         android:layout_width="50dp"
-        android:layout_height="50dp"/>
+        android:layout_height="50dp"
+        app:tint="?attr/colorControlNormal" />
     <TextView
         android:text="Color"
         android:id="@+id/optionName"

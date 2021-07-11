@@ -18,5 +18,18 @@
         android:id="@+id/savedImageFragment"
         android:name="com.debanshu777.painter.ui.fragment.SavedImageFragment"
         android:label="fragment_saved_image"
-        tools:layout="@layout/fragment_saved_image" />
+        tools:layout="@layout/fragment_saved_image" >
+        <action
+            android:id="@+id/action_savedImageFragment_to_fullImageScreenFragment"
+            app:destination="@id/fullImageScreenFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/fullImageScreenFragment"
+        android:name="com.debanshu777.painter.ui.fragment.FullImageScreenFragment"
+        android:label="fragment_full_image_screen"
+        tools:layout="@layout/fragment_full_image_screen" >
+        <argument
+            android:name="file"
+            app:argType="java.io.File" />
+    </fragment>
 </navigation>

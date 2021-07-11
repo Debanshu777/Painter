@@ -3,13 +3,18 @@ package com.debanshu777.painter.ui.fragment
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.debanshu777.painter.R
 import com.debanshu777.painter.adapter.GalleryAdapter
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.fragment_paint.*
 import kotlinx.android.synthetic.main.fragment_saved_image.*
 import java.io.File
@@ -20,6 +25,42 @@ class SavedImageFragment : Fragment(R.layout.fragment_saved_image) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initialSetup()
+        galleryAdapter.setOnItemClickListener {
+            val bundle = Bundle().apply {
+                putSerializable("file", it)
+            }
+            findNavController().navigate(R.id.action_savedImageFragment_to_fullImageScreenFragment,bundle)
+        }
+
+        val itemTouchHelperCallback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                return true
+            }
+
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+
+                Snackbar.make(view, "Successfully Deleted Article", Snackbar.LENGTH_LONG).apply {
+                    setAction("Undo") {
+
+                    }
+                    show()
+                }
+            }
+        }
+        ItemTouchHelper(itemTouchHelperCallback).apply {
+            attachToRecyclerView(galleryView)
+        }
+
+
     }
 
     private fun initialSetup() {

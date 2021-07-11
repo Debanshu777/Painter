@@ -1,11 +1,13 @@
 package com.debanshu777.painter.ui.fragment
 
+import android.app.Activity.RESULT_OK
 import android.app.AlertDialog
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -16,6 +18,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.SeekBar
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -25,8 +28,10 @@ import com.debanshu777.painter.model.Option
 import com.debanshu777.painter.utils.Constant.Companion.BACKGROUND
 import com.debanshu777.painter.utils.Constant.Companion.BRUSH
 import com.debanshu777.painter.utils.Constant.Companion.ERASER
+import com.debanshu777.painter.utils.Constant.Companion.IMAGE
 import com.debanshu777.painter.utils.Constant.Companion.PALETTE
 import com.debanshu777.painter.utils.Constant.Companion.PERMISSION_STORAGE_REQUEST_CODE
+import com.debanshu777.painter.utils.Constant.Companion.PICK_IMAGE
 import com.debanshu777.painter.utils.Constant.Companion.UNDO
 import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
@@ -75,13 +80,45 @@ class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.Permissi
                 PALETTE->{
                     updateColor(PALETTE)
                 }
+                IMAGE->{
+                    getImage()
+                }
 
             }
         }
         save_btn.setOnClickListener{
             saveImages()
         }
+        share_btn.setOnClickListener {
+            Toast.makeText(requireContext(),"To be done",Toast.LENGTH_LONG).show()
+        }
 
+    }
+
+    private fun getImage() {
+        val intent:Intent=Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "image/"
+        startActivityForResult(Intent.createChooser(intent,"Select Picture"),PICK_IMAGE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if(requestCode== PICK_IMAGE && data!=null && resultCode==RESULT_OK ){
+           val pickedImage:Uri=data.data!!
+           val filePath= Array(1){MediaStore.Images.Media.DATA}
+           val cursor=requireActivity().contentResolver.query(pickedImage,filePath,null,null,null)
+           cursor?.moveToFirst()
+           val imagePath=cursor?.getString(cursor.getColumnIndex(filePath[0]))
+
+           var options=BitmapFactory.Options()
+           options.inPreferredConfig=Bitmap.Config.ARGB_8888
+
+           val bitmap=BitmapFactory.decodeFile(imagePath,options)
+           paint_base_layout.setImage(bitmap)
+           cursor?.close()
+
+
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun hasExternalStoragePermission():Boolean = EasyPermissions.hasPermissions(
@@ -257,6 +294,12 @@ class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.Permissi
             Option(
                 R.drawable.ic_erase,
                 ERASER
+            )
+        )
+        list.add(
+            Option(
+                R.drawable.ic_image,
+                IMAGE
             )
         )
         list.add(
