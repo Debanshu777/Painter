@@ -8,106 +8,111 @@ import android.view.MotionEvent
 import android.view.View
 import kotlin.math.abs
 
-class PaintView(context: Context,attributes: AttributeSet) : View(context,attributes) {
+class PaintView(context: Context, attributes: AttributeSet) : View(context, attributes) {
     private lateinit var btnBackground: Bitmap
-    private lateinit var btnView:Bitmap
-    private var image:Bitmap?
-    private var mPaint:Paint=Paint()
-    private var mPath:Path=Path()
-    private var colorBackground:Int
-    private var sizeBrush:Int=5
-    private var sizeEraser:Int
-    private var leftPosition:Float = 50f
-    private var topPosition:Float = 50f
-    private var mX:Float = 0.0f
-    private var mY:Float = 0.0f
+    private lateinit var btnView: Bitmap
+    private var image: Bitmap?
+    private var mPaint: Paint = Paint()
+    private var mPath: Path = Path()
+    private var colorBackground: Int
+    private var sizeBrush: Int = 5
+    private var sizeEraser: Int
+    private var leftPosition: Float = 50f
+    private var topPosition: Float = 50f
+    private var mX: Float = 0.0f
+    private var mY: Float = 0.0f
     private lateinit var mCanvas: Canvas
-    private val DIFFERENCE_SPACE:Int=4
-    private var listAction:ArrayList<Bitmap>
-
+    private val DIFFERENCE_SPACE: Int = 4
+    private var listAction: ArrayList<Bitmap>
+    private var toMove: Boolean
+    private var refX: Float = 0.0f
+    private var refY: Float = 0.0f
 
     init {
-        sizeEraser=sizeBrush-12
-        colorBackground=Color.WHITE
-        listAction= ArrayList()
+        sizeEraser = sizeBrush - 12
+        colorBackground = Color.WHITE
+        listAction = ArrayList()
+        toMove = false
 
         image = null
         mPaint.color = Color.BLACK
-        mPaint.isAntiAlias=true
-        mPaint.isDither=true
-        mPaint.style=Paint.Style.STROKE
-        mPaint.strokeCap=Paint.Cap.ROUND
-        mPaint.strokeJoin=Paint.Join.ROUND
-        mPaint.strokeWidth=toPx(sizeBrush)
+        mPaint.isAntiAlias = true
+        mPaint.isDither = true
+        mPaint.style = Paint.Style.STROKE
+        mPaint.strokeCap = Paint.Cap.ROUND
+        mPaint.strokeJoin = Paint.Join.ROUND
+        mPaint.strokeWidth = toPx(sizeBrush)
 
     }
 
     private fun toPx(sizeBrush: Int): Float {
-        return  sizeBrush*(resources.displayMetrics.density)
+        return sizeBrush * (resources.displayMetrics.density)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
 
-        btnBackground= Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
-        btnView= Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
-        mCanvas= Canvas(btnView)
+        btnBackground = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        btnView = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        mCanvas = Canvas(btnView)
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawColor(colorBackground)
-        if(image!=null){
-            canvas.drawBitmap(image!!,leftPosition,topPosition,null)
+        if (image != null) {
+            canvas.drawBitmap(image!!, leftPosition, topPosition, null)
         }
-        canvas.drawBitmap(btnBackground,0f,0f,null)
-        canvas.drawBitmap(btnView,0f,0f,null)
-    }
-    fun setColorBackground(color:Int){
-        colorBackground=color
-        invalidate()
-        Log.e("SetBackgroundColor ",color.toString())
+        canvas.drawBitmap(btnBackground, 0f, 0f, null)
+        canvas.drawBitmap(btnView, 0f, 0f, null)
     }
 
-    fun setSizeBrush(size:Int){
-        sizeBrush=size
-        mPaint.strokeWidth= toPx(sizeBrush)
+    fun setColorBackground(color: Int) {
+        colorBackground = color
+        invalidate()
+        Log.e("SetBackgroundColor ", color.toString())
     }
-    fun setBrushColor(color:Int){
+
+    fun setSizeBrush(size: Int) {
+        sizeBrush = size
+        mPaint.strokeWidth = toPx(sizeBrush)
+    }
+
+    fun setBrushColor(color: Int) {
         mPaint.color = color
         invalidate()
-        Log.e("SetBrushColor ",color.toString())
+        Log.e("SetBrushColor ", color.toString())
     }
 
-    fun setEraserSize(size:Int){
-        sizeEraser=size
+    fun setEraserSize(size: Int) {
+        sizeEraser = size
         Log.e("SizeEraser ", sizeEraser.toString())
-        mPaint.strokeWidth=toPx(sizeEraser)
+        mPaint.strokeWidth = toPx(sizeEraser)
     }
 
-    fun enableEraser(){
+    fun enableEraser() {
         mPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
     }
 
-    fun disableEraser(){
-        mPaint.xfermode=null
-        mPaint.shader=null
-        mPaint.maskFilter=null
+    fun disableEraser() {
+        mPaint.xfermode = null
+        mPaint.shader = null
+        mPaint.maskFilter = null
     }
 
-    fun addLastAction(bitmap: Bitmap){
+    fun addLastAction(bitmap: Bitmap) {
         listAction.add(bitmap)
     }
 
-    fun returnLastAction(){
-        if(listAction.size>0){
+    fun returnLastAction() {
+        if (listAction.size > 0) {
             listAction.removeAt(listAction.size - 1)
-            if(listAction.size>0){
-                btnView= listAction[listAction.size-1]
-            }else{
-                btnView= Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888)
+            if (listAction.size > 0) {
+                btnView = listAction[listAction.size - 1]
+            } else {
+                btnView = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             }
-            mCanvas= Canvas(btnView)
+            mCanvas = Canvas(btnView)
             invalidate()
         }
     }
@@ -115,14 +120,31 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val x: Float = event.x
         val y: Float = event.y
-        when(event.action){
-            MotionEvent.ACTION_DOWN->{
-                touchStart(x,y)
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                touchStart(x, y)
+                refX = x
+                refY = y
+                if (image != null) {
+                    toMove = ((refX >= leftPosition && refX <= image!!.width + leftPosition)
+                            && (refY >= topPosition && refY <= image!!.height + topPosition))
+                }
             }
-            MotionEvent.ACTION_MOVE->{
-                touchMove(x,y)
+            MotionEvent.ACTION_MOVE -> {
+                if (!toMove)
+                    touchMove(x, y)
+                else{
+                    var nX=event.x
+                    var nY=event.y
+
+                    leftPosition+=nX-refX
+                    topPosition+=nY-refY
+                    refX=nX
+                    refY=nY
+                    invalidate()
+                }
             }
-            MotionEvent.ACTION_UP->{
+            MotionEvent.ACTION_UP -> {
                 addLastAction(getBitMap())
                 touchUp()
             }
@@ -137,35 +159,35 @@ class PaintView(context: Context,attributes: AttributeSet) : View(context,attrib
     }
 
     private fun touchMove(x: Float?, y: Float?) {
-        val dx:Float= abs(x!!-mX)
-        val dy:Float= abs(y!!-mY)
-        if(dx>=DIFFERENCE_SPACE || dy>=DIFFERENCE_SPACE){
-           mPath.quadTo(mX,mY,(x+mX)/2,(y+mY)/2)
-           mY=y
-           mX=x
-           mCanvas.drawPath(mPath,mPaint)
-           invalidate()
+        val dx: Float = abs(x!! - mX)
+        val dy: Float = abs(y!! - mY)
+        if (dx >= DIFFERENCE_SPACE || dy >= DIFFERENCE_SPACE) {
+            mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2)
+            mY = y
+            mX = x
+            mCanvas.drawPath(mPath, mPaint)
+            invalidate()
         }
     }
 
     private fun touchStart(x: Float?, y: Float?) {
         mPath.reset();
-        mPath.moveTo(x!!,y!!)
-        mX= x
-        mY=y
+        mPath.moveTo(x!!, y!!)
+        mX = x
+        mY = y
         invalidate()
     }
 
-    fun getBitMap():Bitmap{
-        this.isDrawingCacheEnabled=true
+    fun getBitMap(): Bitmap {
+        this.isDrawingCacheEnabled = true
         this.buildDrawingCache()
-        val bitmap: Bitmap= Bitmap.createBitmap(this.getDrawingCache())
-        this.isDrawingCacheEnabled=false
+        val bitmap: Bitmap = Bitmap.createBitmap(this.getDrawingCache())
+        this.isDrawingCacheEnabled = false
         return bitmap
     }
 
     fun setImage(bitmap: Bitmap) {
-        image=Bitmap.createScaledBitmap(bitmap,width/2,height/2,true)
+        image = Bitmap.createScaledBitmap(bitmap, width / 2, height / 2, true)
         invalidate()
     }
 }
