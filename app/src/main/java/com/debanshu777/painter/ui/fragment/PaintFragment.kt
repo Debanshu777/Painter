@@ -27,6 +27,7 @@ import com.debanshu777.painter.adapter.OptionAdapter
 import com.debanshu777.painter.model.Option
 import com.debanshu777.painter.utils.Constant.Companion.BACKGROUND
 import com.debanshu777.painter.utils.Constant.Companion.BRUSH
+import com.debanshu777.painter.utils.Constant.Companion.CAMERA
 import com.debanshu777.painter.utils.Constant.Companion.ERASER
 import com.debanshu777.painter.utils.Constant.Companion.IMAGE
 import com.debanshu777.painter.utils.Constant.Companion.PALETTE
@@ -64,7 +65,9 @@ class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.Permissi
         optionAdapter.setOnItemClickListener {
             when(it.optionName){
                 BRUSH->{
+                    paint_base_layout.toMove=false
                     paint_base_layout.disableEraser()
+                    paint_base_layout.invalidate()
                     showDialogSize(false)
                 }
                 ERASER->{

@@ -9,6 +9,7 @@ class Constant {
         const val BACKGROUND="Background"
         const val UNDO="Undo"
         const val IMAGE="Image"
+        const val CAMERA="Camera"
         const val PICK_IMAGE=1000
     }
 }

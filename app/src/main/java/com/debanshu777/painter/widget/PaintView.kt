@@ -2,16 +2,21 @@ package com.debanshu777.painter.widget
 
 import android.content.Context
 import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import androidx.annotation.DrawableRes
+import com.debanshu777.painter.R
 import kotlin.math.abs
+
 
 class PaintView(context: Context, attributes: AttributeSet) : View(context, attributes) {
     private lateinit var btnBackground: Bitmap
     private lateinit var btnView: Bitmap
     private var image: Bitmap?
+    private var captureImage: Bitmap
     private var mPaint: Paint = Paint()
     private var mPath: Path = Path()
     private var colorBackground: Int
@@ -24,9 +29,11 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     private lateinit var mCanvas: Canvas
     private val DIFFERENCE_SPACE: Int = 4
     private var listAction: ArrayList<Bitmap>
-    private var toMove: Boolean
+    var toMove: Boolean
     private var refX: Float = 0.0f
     private var refY: Float = 0.0f
+    private var xCenter: Float = 0.0f
+    private var yCenter: Float = 0.0f
 
     init {
         sizeEraser = sizeBrush - 12
@@ -35,6 +42,11 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         toMove = false
 
         image = null
+        val drawable = resources.getDrawable(R.drawable.ic_camera)
+        Log.e("here",drawable.toString())
+        captureImage = getBitmap(R.drawable.ic_camera)
+        //captureImage = BitmapFactory.decodeResource(context.resources, R.drawable.ic_camera)
+
         mPaint.color = Color.BLACK
         mPaint.isAntiAlias = true
         mPaint.isDither = true
@@ -60,8 +72,12 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawColor(colorBackground)
-        if (image != null) {
+        if (image != null && toMove) {
             canvas.drawBitmap(image!!, leftPosition, topPosition, null)
+            xCenter=leftPosition+image!!.width/2 - captureImage.width/2
+            yCenter=topPosition+image!!.height/2 - captureImage.height/2
+            canvas.drawBitmap(captureImage,xCenter,yCenter,null)
+
         }
         canvas.drawBitmap(btnBackground, 0f, 0f, null)
         canvas.drawBitmap(btnView, 0f, 0f, null)
@@ -90,6 +106,19 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         mPaint.strokeWidth = toPx(sizeEraser)
     }
 
+    private fun getBitmap(@DrawableRes resId: Int): Bitmap {
+        val drawable = resources.getDrawable(resId)
+        val canvas = Canvas()
+        val bitmap = Bitmap.createBitmap(
+            drawable.intrinsicWidth,
+            drawable.intrinsicHeight,
+            Bitmap.Config.ARGB_8888
+        )
+        canvas.setBitmap(bitmap)
+        drawable.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
+        drawable.draw(canvas)
+        return bitmap
+    }
     fun enableEraser() {
         mPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
     }
@@ -125,9 +154,13 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
                 touchStart(x, y)
                 refX = x
                 refY = y
-                if (image != null) {
-                    toMove = ((refX >= leftPosition && refX <= image!!.width + leftPosition)
-                            && (refY >= topPosition && refY <= image!!.height + topPosition))
+                if (toMove) {
+                       if((refX>=xCenter && refX<xCenter+ captureImage.width)
+                           && (refY>=yCenter && refY<yCenter+ captureImage.height)){
+                           val newCanvas:Canvas=Canvas(btnBackground)
+                           newCanvas.drawBitmap(image!!,leftPosition,topPosition,null)
+                           invalidate()
+                       }
                 }
             }
             MotionEvent.ACTION_MOVE -> {
@@ -187,6 +220,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     }
 
     fun setImage(bitmap: Bitmap) {
+        toMove=true
         image = Bitmap.createScaledBitmap(bitmap, width / 2, height / 2, true)
         invalidate()
     }
