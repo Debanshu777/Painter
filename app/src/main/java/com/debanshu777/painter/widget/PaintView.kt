@@ -17,6 +17,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     private lateinit var btnView: Bitmap
     private var image: Bitmap?
     private var captureImage: Bitmap
+    private lateinit var originalImage: Bitmap
     private var mPaint: Paint = Paint()
     private var mPath: Path = Path()
     private var colorBackground: Int
@@ -30,6 +31,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     private val DIFFERENCE_SPACE: Int = 4
     private var listAction: ArrayList<Bitmap>
     var toMove: Boolean
+    var toResize: Boolean
     private var refX: Float = 0.0f
     private var refY: Float = 0.0f
     private var xCenter: Float = 0.0f
@@ -40,6 +42,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         colorBackground = Color.WHITE
         listAction = ArrayList()
         toMove = false
+        toResize = false
 
         image = null
         val drawable = resources.getDrawable(R.drawable.ic_camera)
@@ -129,7 +132,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         mPaint.maskFilter = null
     }
 
-    fun addLastAction(bitmap: Bitmap) {
+    private fun addLastAction(bitmap: Bitmap) {
         listAction.add(bitmap)
     }
 
@@ -155,9 +158,10 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
                 refX = x
                 refY = y
                 if (toMove) {
+                    toResize = isToResize(refX,refY)
                        if((refX>=xCenter && refX<xCenter+ captureImage.width)
                            && (refY>=yCenter && refY<yCenter+ captureImage.height)){
-                           val newCanvas:Canvas=Canvas(btnBackground)
+                           val newCanvas=Canvas(btnBackground)
                            newCanvas.drawBitmap(image!!,leftPosition,topPosition,null)
                            invalidate()
                        }
@@ -167,8 +171,24 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
                 if (!toMove)
                     touchMove(x, y)
                 else{
-                    var nX=event.x
-                    var nY=event.y
+                    val nX=event.x
+                    val nY=event.y
+
+                    if(toResize){
+                        val xScale: Int = if(nX>refX){
+                            ((image!!.width)+(nX-refX)).toInt()
+                        }else{
+                            ((image!!.width)-(refX-nX)).toInt()
+                        }
+                        val yScale: Int = if(nY>refY){
+                            ((image!!.height)+(nY-refY)).toInt()
+                        }else{
+                            ((image!!.height)-(refY-nY)).toInt()
+                        }
+                        if(xScale >0 || yScale>0){
+                            image= Bitmap.createScaledBitmap(originalImage,xScale,yScale,false)
+                        }
+                    }
 
                     leftPosition+=nX-refX
                     topPosition+=nY-refY
@@ -184,6 +204,13 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         }
 
         return true
+    }
+
+    private fun isToResize(refX: Float, refY: Float): Boolean {
+        if((refX<=leftPosition || refX>=leftPosition+image!!.width)
+            ||((refY <=topPosition || refY >=topPosition+image!!.height)))
+                return true
+        return false
     }
 
     private fun touchUp() {
@@ -222,6 +249,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     fun setImage(bitmap: Bitmap) {
         toMove=true
         image = Bitmap.createScaledBitmap(bitmap, width / 2, height / 2, true)
+        originalImage=image!!
         invalidate()
     }
 }
