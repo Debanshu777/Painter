@@ -18,6 +18,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     private var image: Bitmap?
     private var captureImage: Bitmap
     private lateinit var originalImage: Bitmap
+    private lateinit var rotateImage: Bitmap
     private var mPaint: Paint = Paint()
     private var mPath: Path = Path()
     private var colorBackground: Int
@@ -36,6 +37,9 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     private var refY: Float = 0.0f
     private var xCenter: Float = 0.0f
     private var yCenter: Float = 0.0f
+    private var xRotate: Float = 0.0f
+    private var yRotate: Float = 0.0f
+    private var angle: Float = 0.0f
 
     init {
         sizeEraser = sizeBrush - 12
@@ -48,6 +52,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         val drawable = resources.getDrawable(R.drawable.ic_camera)
         Log.e("here",drawable.toString())
         captureImage = getBitmap(R.drawable.ic_camera)
+        rotateImage = getBitmap(R.drawable.ic_rotate)
         //captureImage = BitmapFactory.decodeResource(context.resources, R.drawable.ic_camera)
 
         mPaint.color = Color.BLACK
@@ -76,14 +81,26 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         super.onDraw(canvas)
         canvas.drawColor(colorBackground)
         if (image != null && toMove) {
-            canvas.drawBitmap(image!!, leftPosition, topPosition, null)
+            drawImage(canvas)
+            //canvas.drawBitmap(image!!, leftPosition, topPosition, null)
             xCenter=leftPosition+image!!.width/2 - captureImage.width/2
             yCenter=topPosition+image!!.height/2 - captureImage.height/2
-            canvas.drawBitmap(captureImage,xCenter,yCenter,null)
 
+
+            xRotate=leftPosition+image!!.width+toPx(10)
+            yRotate=topPosition-toPx(10)
+            canvas.drawBitmap(rotateImage,xRotate,yRotate,null)
+            canvas.drawBitmap(captureImage,xCenter,yCenter,null)
         }
         canvas.drawBitmap(btnBackground, 0f, 0f, null)
         canvas.drawBitmap(btnView, 0f, 0f, null)
+    }
+
+    private fun drawImage(canvas: Canvas) {
+        var matrix= Matrix()
+        matrix.setRotate(angle,(image!!.width/2).toFloat(), (image!!.height/2).toFloat())
+        matrix.postTranslate(leftPosition,topPosition)
+        canvas.drawBitmap(image!!,matrix,null)
     }
 
     fun setColorBackground(color: Int) {
@@ -162,9 +179,14 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
                        if((refX>=xCenter && refX<xCenter+ captureImage.width)
                            && (refY>=yCenter && refY<yCenter+ captureImage.height)){
                            val newCanvas=Canvas(btnBackground)
-                           newCanvas.drawBitmap(image!!,leftPosition,topPosition,null)
+                           drawImage(newCanvas)
                            invalidate()
                        }
+                    if((refX>=xRotate && refX<=xRotate+rotateImage.width)
+                        && (refY>=yRotate && refY<=yRotate+rotateImage.height)){
+                        angle+=40
+                        invalidate()
+                    }
                 }
             }
             MotionEvent.ACTION_MOVE -> {
