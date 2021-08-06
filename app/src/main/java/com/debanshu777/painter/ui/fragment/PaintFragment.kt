@@ -25,6 +25,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.debanshu777.painter.R
 import com.debanshu777.painter.adapter.OptionAdapter
 import com.debanshu777.painter.model.Option
+import com.debanshu777.painter.ui.MainActivity
+import com.debanshu777.painter.ui.MainActivityViewModel
 import com.debanshu777.painter.utils.Constant.Companion.BACKGROUND
 import com.debanshu777.painter.utils.Constant.Companion.BRUSH
 import com.debanshu777.painter.utils.Constant.Companion.CAMERA
@@ -48,88 +50,102 @@ import java.io.OutputStream
 import java.util.*
 import kotlin.collections.ArrayList
 
-class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.PermissionCallbacks {
+class PaintFragment : Fragment(R.layout.fragment_paint), EasyPermissions.PermissionCallbacks {
+    lateinit var viewModel: MainActivityViewModel
     private lateinit var optionAdapter: OptionAdapter
     private lateinit var list: ArrayList<Option>
-    private var colorBackground: Int = 0
-    private var colorBrush: Int = 0
-    private var brushSize: Int = 0
-    private var eraserSize: Int = 0
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initialSetup()
+        viewModel = (activity as MainActivity).viewModel
         gallery_btn.setOnClickListener {
             findNavController().navigate(R.id.action_paintFragment_to_savedImageFragment)
         }
+        viewModel.brushSize.observe(viewLifecycleOwner,
+            {
+                paint_base_layout.setSizeBrush(if(it!=null && it >0) it else 0)
+        })
+        viewModel.eraserSize.observe(viewLifecycleOwner,
+            {
+                paint_base_layout.setEraserSize(if(it!=null && it >0) it else 0)
+            })
+        viewModel.colorBackground.observe(viewLifecycleOwner,{
+            paint_base_layout.setColorBackground(it)
+        })
+        viewModel.colorBrush.observe(viewLifecycleOwner,{
+            paint_base_layout.setBrushColor(it)
+        })
         optionAdapter.setOnItemClickListener {
-            when(it.optionName){
-                BRUSH->{
-                    paint_base_layout.toMove=false
+            when (it.optionName) {
+                BRUSH -> {
+                    paint_base_layout.toMove = false
                     paint_base_layout.disableEraser()
                     paint_base_layout.invalidate()
-                    showDialogSize(false)
+                    viewModel.showDialogSize(false,requireContext())
                 }
-                ERASER->{
+                ERASER -> {
                     paint_base_layout.enableEraser()
-                    showDialogSize(true)
+                    viewModel.showDialogSize(true,requireContext())
                 }
-                UNDO->{
+                UNDO -> {
                     paint_base_layout.returnLastAction()
                 }
-                BACKGROUND->{
-                    updateColor(BACKGROUND)
+                BACKGROUND -> {
+                    viewModel.updateColor(BACKGROUND,requireContext())
                 }
-                PALETTE->{
-                    updateColor(PALETTE)
+                PALETTE -> {
+                    viewModel.updateColor(PALETTE,requireContext())
                 }
-                IMAGE->{
+                IMAGE -> {
                     getImage()
                 }
 
             }
         }
-        save_btn.setOnClickListener{
+        save_btn.setOnClickListener {
             saveImages()
         }
         share_btn.setOnClickListener {
-            Toast.makeText(requireContext(),"To be done",Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "To be done", Toast.LENGTH_LONG).show()
         }
 
     }
 
     private fun getImage() {
-        val intent:Intent=Intent(Intent.ACTION_GET_CONTENT)
+        val intent: Intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/"
-        startActivityForResult(Intent.createChooser(intent,"Select Picture"),PICK_IMAGE)
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if(requestCode== PICK_IMAGE && data!=null && resultCode==RESULT_OK ){
-           val pickedImage:Uri=data.data!!
-           val filePath= Array(1){MediaStore.Images.Media.DATA}
-           val cursor=requireActivity().contentResolver.query(pickedImage,filePath,null,null,null)
-           cursor?.moveToFirst()
-           val imagePath=cursor?.getString(cursor.getColumnIndex(filePath[0]))
+        if (requestCode == PICK_IMAGE && data != null && resultCode == RESULT_OK) {
+            val pickedImage: Uri = data.data!!
+            val filePath = Array(1) { MediaStore.Images.Media.DATA }
+            val cursor =
+                requireActivity().contentResolver.query(pickedImage, filePath, null, null, null)
+            cursor?.moveToFirst()
+            val imagePath = cursor?.getString(cursor.getColumnIndex(filePath[0]))
 
-           var options=BitmapFactory.Options()
-           options.inPreferredConfig=Bitmap.Config.ARGB_8888
+            var options = BitmapFactory.Options()
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888
 
-           val bitmap=BitmapFactory.decodeFile(imagePath,options)
-           paint_base_layout.setImage(bitmap)
-           cursor?.close()
+            val bitmap = BitmapFactory.decodeFile(imagePath, options)
+            paint_base_layout.setImage(bitmap)
+            cursor?.close()
 
 
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
 
-    private fun hasExternalStoragePermission():Boolean = EasyPermissions.hasPermissions(
-            requireContext(),
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )
+    private fun hasExternalStoragePermission(): Boolean = EasyPermissions.hasPermissions(
+        requireContext(),
+        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
 
-    private fun requestExternalStoragePermission(){
+    private fun requestExternalStoragePermission() {
         EasyPermissions.requestPermissions(
             requireActivity(),
             "This Application cannot work without Storage Permission",
@@ -140,149 +156,81 @@ class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.Permissi
     }
 
     private fun saveImages() {
-        if(!hasExternalStoragePermission()){
+        if (!hasExternalStoragePermission()) {
             requestExternalStoragePermission()
-        }else{
-            val bitmap:Bitmap = paint_base_layout.getBitMap()
-            val filename="${UUID.randomUUID()}.png"
-            var outputStream:OutputStream?
-            var isSaved:Boolean
+        } else {
+            val bitmap: Bitmap = paint_base_layout.getBitMap()
+            val filename = "${UUID.randomUUID()}.png"
+            var outputStream: OutputStream?
+            var isSaved: Boolean
 
-            Log.e("Saved Image Name",filename)
-            Log.e(" Saved Image Path",activity?.getExternalFilesDir(Environment.DIRECTORY_PICTURES).toString()+File.separator+getString(R.string.app_name))
+            Log.e("Saved Image Name", filename)
+            Log.e(
+                " Saved Image Path",
+                activity?.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                    .toString() + File.separator + getString(R.string.app_name)
+            )
 
-            val folder:File = if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.Q){
+            val folder: File = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 File(
                     requireActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                         .toString() + File.separator + getString(R.string.app_name)
                 )
-            }else {
+            } else {
                 File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                         .toString() + File.separator + getString(R.string.app_name)
                 )
             }
-            if(!folder.exists()){
+            if (!folder.exists()) {
                 folder.mkdirs()
             }
             try {
-                val toBeSavedFile = File(folder.toString()+File.separator+filename)
+                val toBeSavedFile = File(folder.toString() + File.separator + filename)
                 val imageUri = Uri.fromFile(toBeSavedFile)
 
-                Log.e("File Stream Name",folder.toString()+File.separator+filename)
+                Log.e("File Stream Name", folder.toString() + File.separator + filename)
                 outputStream = FileOutputStream(toBeSavedFile)
-                isSaved=bitmap.compress(Bitmap.CompressFormat.PNG,100,outputStream)
+                isSaved = bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
 
-                if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.Q){
-                    val resolver:ContentResolver = requireContext().contentResolver
-                    val contentValue=ContentValues()
-                    contentValue.put(MediaStore.MediaColumns.DISPLAY_NAME,filename)
-                    contentValue.put(MediaStore.MediaColumns.MIME_TYPE,"image/png")
-                    contentValue.put(MediaStore.MediaColumns.RELATIVE_PATH,Environment.DIRECTORY_PICTURES+File.separator+getString(R.string.app_name))
-                    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,contentValue)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val resolver: ContentResolver = requireContext().contentResolver
+                    val contentValue = ContentValues()
+                    contentValue.put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                    contentValue.put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    contentValue.put(
+                        MediaStore.MediaColumns.RELATIVE_PATH,
+                        Environment.DIRECTORY_PICTURES + File.separator + getString(R.string.app_name)
+                    )
+                    val uri =
+                        resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValue)
                     outputStream = resolver.openOutputStream(uri!!)
-                    isSaved=bitmap.compress(Bitmap.CompressFormat.PNG,100,outputStream)
+                    isSaved = bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
 
-                }else{
+                } else {
                     sendPictureToGallery(imageUri)
                 }
-                if(isSaved) {
+                if (isSaved) {
                     Snackbar.make(paint_base_layout, "Image Saved", Snackbar.LENGTH_LONG).show()
 
-                }else{
-                    Snackbar.make(paint_base_layout,"Something Went Wrong",Snackbar.LENGTH_LONG).show()
+                } else {
+                    Snackbar.make(paint_base_layout, "Something Went Wrong", Snackbar.LENGTH_LONG)
+                        .show()
                 }
 
                 outputStream?.flush()
                 outputStream?.close()
-            }catch (e:FileNotFoundException){
+            } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
 
         }
     }
 
-    private fun sendPictureToGallery(imageUri:Uri) {
-        val i:Intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+    private fun sendPictureToGallery(imageUri: Uri) {
+        val i = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
         i.data = imageUri
         requireActivity().sendBroadcast(i)
-    }
-
-    private fun updateColor(optionName: String) {
-        val color= if(optionName == BACKGROUND){
-            colorBackground
-        }else{
-            colorBrush
-        }
-        ColorPickerDialogBuilder
-            .with(context)
-            .setTitle("Choose Color")
-            .initialColor(color)
-            .wheelType(ColorPickerView.WHEEL_TYPE.FLOWER)
-            .setPositiveButton("OK"
-            ) { _, lastSelectedColor, _ ->
-                if(optionName == BACKGROUND){
-                    Log.e("ColorPicker Background",colorBackground.toString())
-                    colorBackground=lastSelectedColor
-                    paint_base_layout.setColorBackground(colorBackground)
-                }else{
-                    Log.e("ColorPicker Brush",colorBackground.toString())
-                    colorBrush=lastSelectedColor
-                    paint_base_layout.setBrushColor(colorBrush)
-                }
-            }
-            .setNegativeButton("Cancel"
-            ) { dialog, _ -> dialog.dismiss()}
-            .build()
-            .show()
-
-    }
-
-
-    private fun showDialogSize(isEraser: Boolean) {
-        val builder:AlertDialog.Builder=AlertDialog.Builder(activity)
-        val view:View=LayoutInflater.from(context).inflate(R.layout.layout_dialog,null,false)
-
-        view.seekbar_size.max=99
-        if(isEraser){
-            view.status_tools_selected.text="Eraser Size"
-            view.iv_tools.setImageResource(R.drawable.ic_erase)
-            view.status_size.text="Selected Size:${eraserSize}"
-        }else{
-            view.status_tools_selected.text="Brush Size"
-            view.iv_tools.setImageResource(R.drawable.ic_brush)
-            view.status_size.text="Selected Size:${brushSize}"
-        }
-        view.seekbar_size.setOnSeekBarChangeListener(object :
-            SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-               if(isEraser){
-                   eraserSize+=1
-                   view.status_size.text="Selected Size:${eraserSize}"
-                   paint_base_layout.setEraserSize(eraserSize)
-               }else{
-                   brushSize+=1
-                   view.status_size.text="Selected Size:${brushSize}"
-                   paint_base_layout.setSizeBrush(brushSize)
-               }
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-
-            }
-
-        })
-        builder.setPositiveButton("Save"
-        ) { dialog, _ ->
-            dialog.dismiss()
-        }
-        builder.setView(view)
-        builder.show()
-
     }
 
     private fun data(): ArrayList<Option> {
@@ -326,10 +274,6 @@ class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.Permissi
     }
 
     private fun initialSetup() {
-
-        colorBackground = Color.WHITE
-        colorBrush = Color.BLACK
-        eraserSize = brushSize - 12;
         //Recycler View Setup
         data()
         optionAdapter = OptionAdapter(list)
@@ -340,15 +284,15 @@ class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.Permissi
     }
 
     override fun onPermissionsDenied(requestCode: Int, perms: List<String>) {
-       if(EasyPermissions.somePermissionPermanentlyDenied(requireActivity(),perms)){
-           SettingsDialog.Builder(requireActivity()).build().show()
-       }else{
-           requestExternalStoragePermission()
-       }
+        if (EasyPermissions.somePermissionPermanentlyDenied(requireActivity(), perms)) {
+            SettingsDialog.Builder(requireActivity()).build().show()
+        } else {
+            requestExternalStoragePermission()
+        }
     }
 
     override fun onPermissionsGranted(requestCode: Int, perms: List<String>) {
-        Snackbar.make(paint_base_layout,"Permission Granted",Snackbar.LENGTH_LONG).show()
+        Snackbar.make(paint_base_layout, "Permission Granted", Snackbar.LENGTH_LONG).show()
     }
 
     override fun onRequestPermissionsResult(
@@ -357,6 +301,11 @@ class PaintFragment : Fragment(R.layout.fragment_paint),EasyPermissions.Permissi
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(requestCode,permissions,grantResults,requireContext())
+        EasyPermissions.onRequestPermissionsResult(
+            requestCode,
+            permissions,
+            grantResults,
+            requireContext()
+        )
     }
 }
