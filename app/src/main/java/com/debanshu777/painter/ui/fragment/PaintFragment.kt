@@ -55,14 +55,17 @@ class PaintFragment : Fragment(R.layout.fragment_paint), EasyPermissions.Permiss
     private lateinit var optionAdapter: OptionAdapter
     private lateinit var list: ArrayList<Option>
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initialSetup()
         viewModel = (activity as MainActivity).viewModel
+        initialSetup()
+
         gallery_btn.setOnClickListener {
             findNavController().navigate(R.id.action_paintFragment_to_savedImageFragment)
         }
+        viewModel.paintView.observe(viewLifecycleOwner,{
+            paint_base_layout.setImage(it.getBitMap())
+        })
         viewModel.brushSize.observe(viewLifecycleOwner,
             {
                 paint_base_layout.setSizeBrush(if(it!=null && it >0) it else 0)

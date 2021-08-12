@@ -21,6 +21,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.debanshu777.painter.R
 import com.debanshu777.painter.utils.Constant
+import com.debanshu777.painter.widget.PaintView
 import com.flask.colorpicker.ColorPickerView
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder
 import com.google.android.material.snackbar.Snackbar
@@ -38,7 +39,9 @@ class MainActivityViewModel(app:Application) : ViewModel(){
     var brushSize: MutableLiveData<Int> = MutableLiveData()
     var eraserSize: MutableLiveData<Int> = MutableLiveData()
     var isSaved:MutableLiveData<Boolean> = MutableLiveData()
+    var paintView:MutableLiveData<PaintView> = MutableLiveData()
     init {
+        paintView=MutableLiveData()
         colorBackground = MutableLiveData(Color.WHITE)
         colorBrush = MutableLiveData(Color.BLACK)
         brushSize = MutableLiveData(5)
@@ -125,7 +128,7 @@ class MainActivityViewModel(app:Application) : ViewModel(){
 
     }
 
-    fun sendPictureToGallery(imageUri: Uri,activity:Activity) {
+    private fun sendPictureToGallery(imageUri: Uri, activity:Activity) {
         val i = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
         i.data = imageUri
         activity.sendBroadcast(i)
@@ -198,5 +201,8 @@ class MainActivityViewModel(app:Application) : ViewModel(){
 
     }
 
-
+    fun storeDrawingStateOnOrientationChange(view: PaintView){
+        Log.e("here",""+view.toMove)
+        paintView.postValue(view)
+    }
 }

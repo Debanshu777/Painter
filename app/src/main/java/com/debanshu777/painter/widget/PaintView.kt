@@ -2,7 +2,8 @@ package com.debanshu777.painter.widget
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -12,7 +13,7 @@ import com.debanshu777.painter.R
 import kotlin.math.abs
 
 
-class PaintView(context: Context, attributes: AttributeSet) : View(context, attributes) {
+open class PaintView(context: Context, attributes: AttributeSet) : View(context, attributes) {
     private lateinit var btnBackground: Bitmap
     private lateinit var btnView: Bitmap
     private var image: Bitmap?
@@ -41,6 +42,7 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
     private var yRotate: Float = 0.0f
     private var angle: Float = 0.0f
 
+    private var stuff:Int=0
     init {
         sizeEraser = sizeBrush - 12
         colorBackground = Color.WHITE
@@ -273,5 +275,76 @@ class PaintView(context: Context, attributes: AttributeSet) : View(context, attr
         image = Bitmap.createScaledBitmap(bitmap, width / 2, height / 2, true)
         originalImage=image!!
         invalidate()
+    }
+    fun setBitmap(bitmap: Bitmap) :Bitmap{
+        Log.e("SetBitmap",""+bitmap.height)
+        Log.e("SetBitmap",""+bitmap.width)
+        val matrix = Matrix()
+        matrix.postRotate(90F)
+        var rotatedBitmap = Bitmap.createScaledBitmap(
+            bitmap,
+            bitmap.width/2,
+            bitmap.height/2, true
+        )
+        Log.e("SetBitmap",""+rotatedBitmap.hashCode())
+        return rotatedBitmap
+    }
+    override fun onSaveInstanceState(): Parcelable? {
+        Log.e("onSaveInstanceState","here")
+        Log.e("onSaveInstanceState","here "+btnView.hashCode())
+        Log.e("onSaveInstanceState","here "+btnBackground.hashCode())
+        return SavedState(
+            super.onSaveInstanceState(),
+            btnView,
+            btnBackground,
+            stuff
+        )
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable) {
+        Log.e("onRestoreInstanceState","here")
+        val savedState = state as SavedState
+        super.onRestoreInstanceState(savedState.superState)
+        stuff = savedState.stuff
+        Log.e("onRestoreInstanceState", "here stuff $stuff")
+        btnView = setBitmap(savedState.btnView)
+        btnBackground= setBitmap(savedState.btnBackground)
+    }
+
+    protected class SavedState : BaseSavedState {
+        val btnView: Bitmap
+        val btnBackground: Bitmap
+        val stuff: Int
+
+        constructor(superState: Parcelable?, btnView: Bitmap, btnBackground: Bitmap, stuff: Int) : super(superState) {
+            this.btnView = btnView
+            this.btnBackground = btnBackground
+            this.stuff = stuff
+        }
+
+        constructor(source: Parcel) : super(source) {
+            btnView = Bitmap.CREATOR.createFromParcel(source)
+            btnBackground = Bitmap.CREATOR.createFromParcel(source)
+            stuff = source.readInt()
+        }
+
+        override fun writeToParcel(destination: Parcel, flags: Int) {
+            super.writeToParcel(destination, flags)
+            btnView.writeToParcel(destination, 0)
+            btnBackground.writeToParcel(destination, 0)
+            destination.writeInt(stuff)
+        }
+
+        companion object {
+            @JvmField val CREATOR: Parcelable.Creator<SavedState?> = object : Parcelable.Creator<SavedState?> {
+                override fun createFromParcel(`in`: Parcel): SavedState? {
+                    return SavedState(`in`)
+                }
+
+                override fun newArray(size: Int): Array<SavedState?> {
+                    return arrayOfNulls(size)
+                }
+            }
+        }
     }
 }
